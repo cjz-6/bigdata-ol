@@ -1,0 +1,146 @@
+version: '3.8'
+
+networks:
+  hadoop-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+services:
+  namenode:
+    build: .
+    container_name: namenode
+    hostname: namenode
+    networks:
+      hadoop-net:
+        ipv4_address: 172.20.0.10
+    environment:
+      - HADOOP_ROLE=namenode
+      - TZ=Asia/Shanghai
+    ports:
+      - "9870:9870"
+      - "9000:9000"
+    volumes:
+      # 绑定挂载：数据真的存在项目目录下的 ./data 文件夹中
+      # 格式：宿主机路径:容器内路径
+      - ./data/namenode/name:/usr/local/hadoop3.4.2/dfs/name
+      - ./data/namenode/logs:/usr/local/hadoop3.4.2/logs
+      - ./data/tmp:/usr/local/hadoop3.4.2/tmp
+      # 时间同步应该用宿主机的真实localtime
+      - /etc/localtime:/etc/localtime:ro
+    restart: unless-stopped
+
+  secondarynamenode:
+    build: .
+    container_name: secondarynamenode
+    hostname: secondarynamenode
+    networks:
+      hadoop-net:
+        ipv4_address: 172.20.0.12
+    environment:
+      - HADOOP_ROLE=secondarynamenode
+      - TZ=Asia/Shanghai
+    ports:
+      - "9868:9868"
+    volumes:
+      - ./data/secondarynamenode/logs:/usr/local/hadoop3.4.2/logs
+      - /etc/localtime:/etc/localtime:ro
+    depends_on:
+      - namenode
+    restart: unless-stopped
+
+  resourcemanager:
+    build: .
+    container_name: resourcemanager
+    hostname: resourcemanager
+    networks:
+      hadoop-net:
+        ipv4_address: 172.20.0.11
+    environment:
+      - HADOOP_ROLE=resourcemanager
+      - TZ=Asia/Shanghai
+    ports:
+      - "8088:8088"
+    volumes:
+      - ./data/resourcemanager/logs:/usr/local/hadoop3.4.2/logs
+      - /etc/localtime:/etc/localtime:ro
+    depends_on:
+      - namenode
+    restart: unless-stopped
+
+  datanode1:
+    build: .
+    container_name: datanode1
+    hostname: datanode1
+    networks:
+      hadoop-net:
+        ipv4_address: 172.20.0.21
+    environment:
+      - HADOOP_ROLE=datanode
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./data/datanode1/data:/usr/local/hadoop3.4.2/dfs/data
+      - ./data/datanode1/logs:/usr/local/hadoop3.4.2/logs
+      - ./data/tmp:/usr/local/hadoop3.4.2/tmp
+      - /etc/localtime:/etc/localtime:ro
+    depends_on:
+      - namenode
+    restart: unless-stopped
+
+  datanode2:
+    build: .
+    container_name: datanode2
+    hostname: datanode2
+    networks:
+      hadoop-net:
+        ipv4_address: 172.20.0.22
+    environment:
+      - HADOOP_ROLE=datanode
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./data/datanode2/data:/usr/local/hadoop3.4.2/dfs/data
+      - ./data/datanode2/logs:/usr/local/hadoop3.4.2/logs
+      - ./data/tmp:/usr/local/hadoop3.4.2/tmp
+      - /etc/localtime:/etc/localtime:ro
+    depends_on:
+      - namenode
+    restart: unless-stopped
+
+  nodemanager1:
+    build: .
+    container_name: nodemanager1
+    hostname: nodemanager1
+    networks:
+      hadoop-net:
+        ipv4_address: 172.20.0.31
+    environment:
+      - HADOOP_ROLE=nodemanager
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./data/nodemanager1/logs:/usr/local/hadoop3.4.2/logs
+      - /etc/localtime:/etc/localtime:ro
+    depends_on:
+      - resourcemanager
+    restart: unless-stopped
+
+  nodemanager2:
+    build: .
+    container_name: nodemanager2
+    hostname: nodemanager2
+    networks:
+      hadoop-net:
+        ipv4_address: 172.20.0.32
+    environment:
+      - HADOOP_ROLE=nodemanager
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./data/nodemanager2/logs:/usr/local/hadoop3.4.2/logs
+      - /etc/localtime:/etc/localtime:ro
+    depends_on:
+      - resourcemanager
+    restart: unless-stopped
+
+# 重要：使用绑定挂载时，底部不需要定义 volumes 区域！
+# volumes:
+#   namenode-data:  <-- 完全删除这部分
