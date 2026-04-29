@@ -36,4 +36,5 @@ YARN 配置 ( yarn-site.xml ):
 - 时间同步：挂载宿主机的 /etc/localtime
 
 ### 操作
-`docker compose up -d --duild`
+进入Hadoop目录执行
+`docker compose up -d --build`
